@@ -34,6 +34,7 @@ void thermocoupleRead() {
   static int counter = 0;
   static int silence = 0; 
   static int error = 0;
+  static int lasterror = 0;
 
     counter = counter + 1;
     if (counter == 100){
@@ -44,6 +45,7 @@ void thermocoupleRead() {
              digitalWrite(errorRelay, HIGH); //this turns the alarm off if the temp goes below the reset value
              silence = 0;
              error = 0;
+             lasterror = 0;
              Serial.print("Error is ");
              Serial.println(error);
              Serial.print("Silence is ");
@@ -52,6 +54,10 @@ void thermocoupleRead() {
            
            else if (thermocouple.readCelsius() > highTemp){
              error = 1;
+             if (silence == 1){
+               lasterror = error;
+               silence = 0;
+               }
              Serial.println(errorStr[1]);
              digitalWrite(overTEMP, HIGH);
              Serial.print("Error is ");
@@ -62,6 +68,10 @@ void thermocoupleRead() {
 
            else if (isnan(thermocouple.readCelsius())){
              error = 2;
+             if (silence == 1){
+               lasterror = error;
+               silence = 0;
+               }
              Serial.println(errorStr[3]);
              Serial.print("Error is ");
              Serial.println(error);
@@ -73,16 +83,14 @@ void thermocoupleRead() {
       Serial.println(thermocouple.readCelsius()); //outputs chilled water temperature to serial interface
       
       if (digitalRead(silencePin) == LOW){
-       digitalWrite(errorRelay, HIGH); //This turns the alarm off with the silence button
-       silence = 1;
-       }
-         
-      if ((error != 0) && (silence == 0)){
+         digitalWrite(errorRelay, HIGH); //This turns the alarm off with the silence button
+         silence = 1;
+         }
+      if (lasterror != error) {
        digitalWrite(errorRelay, LOW); //this turns the alarm on
+       
        }
-      if (error-1 != 0){
-        silence = 0;
-        } 
+
     }
            
 }
