@@ -19,14 +19,14 @@ const int vccPin = 3; //can eliminate later
 const int gndPin = 2; //can eliminate later
 const int vccPin2 = 9; //can eliminate later
 const int silencePin = 24; //digital input to silence alarm button. 10 on uno
-const int lowPRESSURE= 25;// 
+const int lowPRESSURE= 31;// 
 const int errorRelay1 = 26; //Digital output to low air pressure alarm relay. 9 on uno
 unsigned long previousMillis = 0;
 //variables
 char* errorStr[] = {"Low Air Pressure", "High Water Temperature", "Vacuum Pressure High" , "Thermocouple Broken!"};
 float highTemp = 30.0; //Cooling Loop High Temperature Set Point
 float resetTemp = 29.5; //Cooling Loop Reset Temperature Set Point
-float LowAirPressure = 95; // Low Air Pressure
+float LowAirPressure = 20; // Low Air Pressure
 
 
 MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO); //Thermocouple setup
@@ -59,6 +59,7 @@ void thermocoupleRead() {
                }
              Serial.println(errorStr[1]);
              digitalWrite(overTEMP, HIGH);
+             
              }
            else if (isnan(thermocouple.readCelsius())){
              error = 2;
@@ -79,12 +80,18 @@ void thermocoupleRead() {
        digitalWrite(errorRelay, LOW); //this turns the alarm on
        
        } 
-
+     if (digitalRead(silencePin) == LOW){// If button is pressed...
+         digitalWrite(lowPRESSURE, HIGH); //This turns the alarm off with the silence button
+         }
+          if (lasterror != error) {
+            digitalWrite(lowPRESSURE, LOW); //this turns the alarm on
+       }
     }
      
 }
 
 void AirPressureMonitor () {
+  float c = analogRead(A0);
 float AirPressure = analogRead(A0)*0.246-24.955; //Convert Analog values to psi
 static int counter = 0;
 static int error = 0;
@@ -109,15 +116,13 @@ counter = counter + 1;
       error = 0;
       lasterror = 0;
     }
+ 
       Serial.print("Air Pressure =  ");
-      Serial.println(AirPressure); // Just printing the air pressure values
+      Serial.println(AirPressure);
+      Serial.println(c);
+      // Just printing the air pressure values
      
-     if (digitalRead(silencePin) == LOW){// If button is pressed...
-         digitalWrite(lowPRESSURE, HIGH); //This turns the alarm off with the silence button
-         }
-          if (lasterror != error) {
-            digitalWrite(lowPRESSURE, LOW); //this turns the alarm on
-       }
+
   }
     
 }
@@ -133,7 +138,7 @@ void setup() {
   pinMode(silencePin, INPUT); digitalWrite(silencePin, HIGH);
   pinMode(overTEMP, OUTPUT); digitalWrite(overTEMP, LOW);
   pinMode(errorRelay, OUTPUT); digitalWrite(errorRelay, HIGH);
-  pinMode(lowPRESSURE, OUTPUT); // Low Air pressure Alarm
+  pinMode(lowPRESSURE, OUTPUT); digitalWrite(lowPRESSURE,HIGH);// Low Air pressure Alarm
   Serial.println("Welcome to the THUNDERDOME!!!");
   Serial.println("MAX6675 test");
   // wait for MAX chip to stabilize
